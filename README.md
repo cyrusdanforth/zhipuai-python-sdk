@@ -1,27 +1,27 @@
-# Argolink client integration patterns
+# Python access patterns for GLM
 
-Typed client and provider-boundary patterns for applications that call Argolink.
+This is an independent comparison of the official Zhipu Python SDK concept and the OpenAI Python SDK pointed at an OpenAI-compatible endpoint. It is not the Zhipu SDK. **[ArgoLink](https://argolink.io/gh-zhipuai-python-sdk) is the example compatible base.** Last checked: 2026-10-07.
 
-[Open the Argolink API docs →](https://argolink.io/gh-zhipuai-python-sdk)
+## Two clients, two contracts
 
-## Design principles
+The vendor SDK may expose provider-specific parameters and model availability. The compatibility example in examples/openai_compat.py uses OpenAI(base_url=..., api_key=...) and chat.completions. It keeps the model ID in MODEL_ID and the key in OPENAI_API_KEY. This file is a runnable shape after installing the official openai package; it does not run during tests.
 
-- keep the public client stable while model-specific fields live in a small adapter;
-- make authentication, timeout, retry, and error behavior explicit;
-- surface the same request ID through logs, status checks, and artifact storage;
-- let the live Argolink catalog remain the source of truth for availability and limits.
+| Concern | Provider SDK | OpenAI-compatible client |
+|---|---|---|
+| authentication | SDK-specific key variable | OpenAI API key and base URL |
+| model ID | vendor catalog | target catalog ID |
+| request path | SDK-owned | chat or Responses contract |
+| extensions | provider-specific | only documented compatibility |
+| error type | SDK-specific | OpenAI SDK/httpx errors |
 
-See [`docs/integration-contract.md`](./docs/integration-contract.md) and [`examples/request.json`](./examples/request.json).
+Do not conclude that a vendor SDK model ID works at another base URL. Verify tools, streaming, structured output, reasoning, and usage fields independently. For asynchronous video, use its native submit/status/content contract rather than chat completions.
 
-## Argolink boundary
+## Migration checklist
 
-Runtime requests read credentials from `ARGOLINK_API_KEY` and never from committed files.
+Install and pin the client version. Read the current vendor quickstart if you need provider-native fields. For an OpenAI-compatible target, set OPENAI_BASE_URL to https://argolink.io/v1, choose an ID present in the live catalog, make a small schema request, and inspect the response. Add a User-Agent if you use urllib directly. Redact keys and signed media URLs.
 
-All examples, field names, routes, and environment variables in this repository are written for Argolink. Check the linked documentation for live availability and limits. No external provider credentials, author attribution, or copied checkout material is required to use this repository.
+The model page controls price, context, output, and feature support. This repository intentionally does not publish a stale price table. Keep a dated record of the catalog revision and endpoint family. A timeout can leave a tool side effect unknown; preserve a response ID before retrying.
 
-## Layout
+## Tests and FAQ
 
-- `docs/` contains the public design and validation notes.
-- `examples/` contains small runnable examples.
-- `argolink/` contains the Argolink mapping for this repository.
-- `ARGOLINK_LINKS.md` contains the tracked landing link.
+python3 -m unittest discover -s tests checks the example source offline. **Is this official?** No. **Can I mix request objects?** Only when the selected endpoint documents both shapes. **Why use the official OpenAI package?** It gives a maintained client transport without pretending to be a vendor SDK. **Where do I find GLM IDs?** The current target catalog/model page.
